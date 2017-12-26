@@ -1,11 +1,10 @@
 package com.coolweather.android;
 
 import android.app.ProgressDialog;
-import android.content.Context;
-import android.net.Uri;
+import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -53,7 +52,7 @@ public class ChooseAreaFragment extends Fragment {
     private List<String> dataList = new ArrayList<>();
 
     //    省列表
-    private List<Province> provincesList;
+    private List<Province> provinceList;
 
     //    市列表
     private List<City> cityList;
@@ -66,6 +65,8 @@ public class ChooseAreaFragment extends Fragment {
 
     //    选中的城市
     private City selectedCity;
+
+    private County seletedCounty;
 
     //    当前选中的级别
     private int currentLevel;
@@ -93,11 +94,21 @@ public class ChooseAreaFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 if (currentLevel == LEVEL_PROVINCE) {
-                    selectedProvince = provincesList.get(position);
+                    selectedProvince = provinceList.get(position);
+                    Log.d("WeatherData", "ProvinceId=" + selectedProvince.getId());
                     queryCities();
                 } else if (currentLevel == LEVEL_CITY) {
                     selectedCity = cityList.get(position);
+                    Log.d("WeatherData", "CityId=" + selectedCity.getId());
                     queryCounties();
+                } else if (currentLevel == LEVEL_COUNTY) {
+                    seletedCounty = countyList.get(position);
+                    String weatherId = countyList.get(position).getWeatherId();
+                    Log.d("WeatherData", "CountyId=" + seletedCounty.getId() + ", weatherId=" + seletedCounty.getWeatherId());
+                    Intent intent = new Intent(getActivity(), WeatherActivity.class);
+                    intent.putExtra("weather_id", weatherId);
+                    startActivity(intent);
+                    getActivity().finish();
                 }
             }
         });
@@ -119,10 +130,10 @@ public class ChooseAreaFragment extends Fragment {
     private void queryProvinces() {
         titleText.setText(("中国"));
         backButton.setVisibility(View.GONE);
-        provincesList = DataSupport.findAll(Province.class);
-        if (provincesList.size() > 0) {
+        provinceList = DataSupport.findAll(Province.class);
+        if (provinceList.size() > 0) {
             dataList.clear();
-            for (Province province : provincesList) {
+            for (Province province : provinceList) {
                 dataList.add(province.getProvinceName());
             }
             adapter.notifyDataSetChanged();
@@ -177,7 +188,7 @@ public class ChooseAreaFragment extends Fragment {
 
     //    根据传入的地址和类型从服务器上查询省市县数据
     private void queryFromServer(String address, final String type) {
-//        showProgressDialog();
+        showProgressDialog();
         HttpUtil.sendOkHttpRequest(address, new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
@@ -185,7 +196,7 @@ public class ChooseAreaFragment extends Fragment {
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-//                        closeProgressDialog();
+                        closeProgressDialog();
                         Toast.makeText(getContext(), "加载失败", Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -206,7 +217,7 @@ public class ChooseAreaFragment extends Fragment {
                     getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-//                            closeProgressDialog();
+                            closeProgressDialog();
                             if ("province".equals(type)) {
                                 queryProvinces();
                             } else if ("city".equals(type)) {
